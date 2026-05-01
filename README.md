@@ -6,6 +6,13 @@ DealLenseAI is a production-style M&A Deal Intelligence Platform built as a seri
 
 The product is designed to feel closer to PitchBook, CapIQ, or a modern internal investment banking analytics tool than a simple AI chat interface.
 
+## Live Demo
+
+- **GitHub Pages demo:** https://minnehanjames-hub.github.io/DealLenseAI/
+- **Source code:** https://github.com/minnehanjames-hub/DealLenseAI
+
+The public GitHub Pages version is a static demo that embeds the synthetic dataset and uses deterministic mock AI commentary. The full local app runs the FastAPI backend, SQLite database, OpenAI-compatible insight endpoint, and ReportLab PDF generation.
+
 ## Why I Built It
 
 Investment banking analysts, private equity associates, and corporate development teams often need to understand where deal activity is accelerating, which sectors are attracting premium valuations, and which buyers are behaving aggressively. DealLenseAI demonstrates how structured M&A analytics and AI commentary can work together: the AI explains outputs from the analytics engine rather than replacing the analytical workflow.
@@ -32,7 +39,7 @@ Investment banking analysts, private equity associates, and corporate developmen
 - **Database:** SQLite local MVP
 - **Reports:** ReportLab PDF generation
 - **AI:** OpenAI-compatible chat completions API with mock fallback
-- **Deployment option:** Docker Compose
+- **Deployment options:** GitHub Pages static demo, Docker Compose local full stack
 
 ## Architecture
 
@@ -95,6 +102,16 @@ Open:
 - Frontend: http://localhost:3000
 - API docs: http://localhost:8000/docs
 - Health check: http://localhost:8000/health
+
+## GitHub Pages Deployment
+
+This repo includes a GitHub Actions workflow at `.github/workflows/deploy-pages.yml`. On pushes to `main`, it:
+
+- exports a static demo dataset to `frontend/public/demo-data.json`
+- builds the Next.js frontend with `NEXT_PUBLIC_STATIC_DEMO=1`
+- deploys `frontend/out` to GitHub Pages at `/DealLenseAI/`
+
+GitHub Pages is static hosting, so it does not run the FastAPI server. The hosted demo is designed for portfolio viewing; the local setup is the complete full-stack version.
 
 ## Docker Option
 
