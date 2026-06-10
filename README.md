@@ -2,7 +2,7 @@
 
 **M&A intelligence for valuation trends, buyer behavior, and sector momentum.**
 
-DealLenseAI is a production-style M&A Deal Intelligence Platform built as a serious finance analytics portfolio project. It combines a Next.js dashboard, a FastAPI analytics backend, synthetic transaction data, proprietary-style scoring models, an OpenAI-compatible insight layer, and one-page PDF sector reports.
+DealLenseAI is a production-style M&A Deal Intelligence Platform built as a serious finance analytics portfolio project. It combines a Next.js dashboard, a FastAPI analytics backend, public-source transaction records, synthetic demo data, proprietary-style scoring models, an OpenAI-compatible insight layer, and one-page PDF sector reports.
 
 The product is designed to feel closer to PitchBook, CapIQ, or a modern internal investment banking analytics tool than a simple AI chat interface.
 
@@ -11,7 +11,7 @@ The product is designed to feel closer to PitchBook, CapIQ, or a modern internal
 - **GitHub Pages demo:** https://minnehanjames-hub.github.io/DealLenseAI/
 - **Source code:** https://github.com/minnehanjames-hub/DealLenseAI
 
-The public GitHub Pages version is a static demo that embeds the synthetic dataset and uses deterministic mock AI commentary. The full local app runs the FastAPI backend, SQLite database, OpenAI-compatible insight endpoint, and ReportLab PDF generation.
+The public GitHub Pages version is a static demo that embeds both public-source deal records and synthetic demo records. It uses deterministic mock AI commentary. The full local app runs the FastAPI backend, SQLite database, OpenAI-compatible insight endpoint, and ReportLab PDF generation.
 
 ## Why I Built It
 
@@ -23,12 +23,14 @@ Investment banking analysts, private equity associates, and corporate developmen
 - Dark-mode M&A intelligence dashboard
 - KPI cards for deal count, disclosed value, valuation medians, active sector, and buyer split
 - Recharts visualizations for volume trends, valuation by sector, buyer mix, deal value distribution, top acquirers, and sector momentum
-- Filterable deal database with sector, geography, buyer type, date, deal size, and multiple availability filters
-- Individual deal detail pages with peer comparison, attractiveness score, similar transactions, rationale, red flags, and deal commentary
+- Filterable deal database with public/synthetic data mode, sector, geography, buyer type, date, deal size, and multiple availability filters
+- Individual deal detail pages with peer comparison, attractiveness score, similar transactions, rationale, red flags, deal commentary, and source trail
 - Sector intelligence page with momentum scoring and valuation benchmarks
 - AI Market Commentary panel using OpenAI-compatible APIs with deterministic mock fallback
 - One-page PDF sector snapshot report generation
+- Public-source seed dataset with source URLs, verification status, extracted date, source quality, and confidence scoring
 - Synthetic seed dataset with 180 fictional M&A transactions
+- No-key GDELT ingestion utility for public acquisition candidate collection
 - SQLite local database with auto-seeding from CSV
 - Optional Docker Compose setup
 
@@ -68,6 +70,8 @@ DealLenseAI
 │   └── Hot sector and acquirer rankings
 │
 └── seed data
+    ├── backend/data/real_public_deals.csv
+    ├── backend/data/gdelt_public_deals.csv (generated when ingestion is run)
     └── backend/data/seed_deals.csv
 ```
 
@@ -103,6 +107,14 @@ Open:
 - API docs: http://localhost:8000/docs
 - Health check: http://localhost:8000/health
 
+Useful API examples:
+
+```bash
+curl "http://localhost:8000/deals?data_source=public&limit=50"
+curl "http://localhost:8000/analytics/overview?data_source=public"
+curl "http://localhost:8000/deals?data_source=synthetic&sector=Software"
+```
+
 ## GitHub Pages Deployment
 
 This repo includes a GitHub Actions workflow at `.github/workflows/deploy-pages.yml`. On pushes to `main`, it:
@@ -111,7 +123,7 @@ This repo includes a GitHub Actions workflow at `.github/workflows/deploy-pages.
 - builds the Next.js frontend with `NEXT_PUBLIC_STATIC_DEMO=1`
 - deploys `frontend/out` to GitHub Pages at `/DealLenseAI/`
 
-GitHub Pages is static hosting, so it does not run the FastAPI server. The hosted demo is designed for portfolio viewing; the local setup is the complete full-stack version.
+GitHub Pages is static hosting, so it does not run the FastAPI server. The hosted demo embeds public and synthetic records; the local setup is the complete full-stack version.
 
 ## Docker Option
 
@@ -119,9 +131,36 @@ GitHub Pages is static hosting, so it does not run the FastAPI server. The hoste
 docker compose up --build
 ```
 
+## Public Data Mode
+
+`backend/data/real_public_deals.csv` contains source-backed public transaction records from company announcements, investor relations pages, and SEC material. Public records include:
+
+- `data_source=public`
+- `source_name`
+- `source_url`
+- `source_type`
+- `source_date`
+- `verification_status`
+- `extracted_at`
+- `source_notes`
+
+Public records do **not** invent revenue, EBITDA, EV/Revenue, or EV/EBITDA when those values are not disclosed. Missing valuation fields are intentionally shown as `n/a`.
+
+To collect no-key public acquisition candidates from GDELT:
+
+```bash
+cd backend
+source .venv/bin/activate
+cd ..
+PYTHONPATH="$PWD" python backend/data/ingest_public_deals.py --output backend/data/gdelt_public_deals.csv --max-records 75
+PYTHONPATH="$PWD" python backend/data/export_static_demo.py
+```
+
+GDELT rate-limits aggressively, so run this slowly and treat generated rows as `Needs review` candidates until a human verifies each source.
+
 ## Synthetic Data Notice
 
-All transaction records in `backend/data/seed_deals.csv` are fictional and generated for demo purposes. The dataset is intentionally realistic enough to demonstrate M&A analytics workflows, but it should not be used for investment decisions, market claims, valuation work, or diligence.
+Transaction records in `backend/data/seed_deals.csv` are fictional and generated for demo purposes. The dataset is intentionally realistic enough to demonstrate M&A analytics workflows, but it should not be used for investment decisions, market claims, valuation work, or diligence.
 
 The seed file includes 180 synthetic deals across:
 
@@ -165,7 +204,8 @@ Add screenshots here after running the app:
 
 - PostgreSQL production profile and migrations
 - Authentication and saved workspaces
-- Real source ingestion pipeline with provenance tracking
+- Additional real source ingestion connectors, including SEC filing extraction and licensed deal-data providers
+- Paid/private data integrations for PitchBook, CapIQ, FactSet, Crunchbase, or Refinitiv if credentials are available
 - Comparable company and public market benchmarking
 - More advanced NLP extraction from deal announcements
 - Scenario analysis for sector valuation sensitivity

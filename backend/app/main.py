@@ -46,6 +46,7 @@ def parse_filters(
     date_from: Annotated[str | None, Query(description="Inclusive YYYY-MM-DD start date")] = None,
     date_to: Annotated[str | None, Query(description="Inclusive YYYY-MM-DD end date")] = None,
     multiple_availability: Annotated[str, Query(pattern="^(all|revenue|ebitda|both)$")] = "all",
+    data_source: Annotated[str, Query(pattern="^(synthetic|public|all)$")] = "synthetic",
     limit: Annotated[int, Query(ge=1, le=1000)] = 500,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> DealFilters:
@@ -58,6 +59,7 @@ def parse_filters(
         date_from=date_from,
         date_to=date_to,
         multiple_availability=multiple_availability,  # type: ignore[arg-type]
+        data_source=data_source,  # type: ignore[arg-type]
         limit=limit,
         offset=offset,
     )
@@ -66,7 +68,13 @@ def parse_filters(
 @app.get("/health", response_model=HealthResponse, tags=["system"])
 def health() -> HealthResponse:
     """Return API and database health information."""
-    return HealthResponse(status="ok", database="sqlite", deals_loaded=deal_count())
+    return HealthResponse(
+        status="ok",
+        database="sqlite",
+        deals_loaded=deal_count(),
+        synthetic_deals_loaded=deal_count("synthetic"),
+        public_deals_loaded=deal_count("public"),
+    )
 
 
 @app.get("/metadata", tags=["deals"])
@@ -76,6 +84,7 @@ def metadata() -> dict[str, list[str]]:
         "sectors": get_distinct("sector"),
         "geographies": get_distinct("geography"),
         "buyer_types": get_distinct("buyer_type"),
+        "data_sources": get_distinct("data_source"),
     }
 
 
@@ -92,7 +101,8 @@ def deal_detail(deal_id: int) -> dict:
     deal = get_deal(deal_id)
     if not deal:
         raise HTTPException(status_code=404, detail="Deal not found")
-    return enrich_deal_detail(deal, list_all_deals())
+    peer_filters = DealFilters(data_source=deal.get("data_source", "synthetic"), limit=1000)  # type: ignore[arg-type]
+    return enrich_deal_detail(deal, list_all_deals(peer_filters))
 
 
 @app.get("/analytics/overview", tags=["analytics"])

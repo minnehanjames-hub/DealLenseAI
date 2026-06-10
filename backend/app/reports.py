@@ -11,13 +11,13 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 
 
 def _money(value: float | int | None) -> str:
-    if value is None:
+    if value is None or float(value) == 0:
         return "n/a"
     return f"${float(value):,.0f}M"
 
 
 def _multiple(value: float | int | None) -> str:
-    if value is None:
+    if value is None or float(value) == 0:
         return "n/a"
     return f"{float(value):.1f}x"
 
@@ -65,7 +65,7 @@ def build_sector_report_pdf(
 
     story: list[Any] = [
         Paragraph(f"DealLenseAI Sector Snapshot: {sector}", title),
-        Paragraph("Synthetic/demo data. For portfolio demonstration and analytical workflow design only.", body),
+        Paragraph("Public-source records and clearly labeled synthetic demo data. Verify source documents before investment use.", body),
         Spacer(1, 0.1 * inch),
     ]
 
@@ -167,4 +167,3 @@ def _styled_table(rows: list[list[Any]], widths: list[float]) -> Table:
         )
     )
     return table
-

@@ -1,4 +1,6 @@
 export type BuyerType = "Strategic" | "Sponsor" | "Corporate" | "Family Office" | "Other";
+export type DataSource = "synthetic" | "public";
+export type DataSourceFilter = DataSource | "all";
 
 export interface Deal {
   id: number;
@@ -19,6 +21,15 @@ export interface Deal {
   rationale: string;
   source_quality_score: number;
   confidence_score: number;
+  data_source: DataSource;
+  source_name: string | null;
+  source_url: string | null;
+  source_type: string | null;
+  source_date: string | null;
+  verification_status: string | null;
+  extracted_at: string | null;
+  filing_accession: string | null;
+  source_notes: string | null;
 }
 
 export interface DealDetail extends Deal {
@@ -52,6 +63,7 @@ export interface DashboardFilters {
   date_from?: string;
   date_to?: string;
   multiple_availability?: "all" | "revenue" | "ebitda" | "both";
+  data_source?: DataSourceFilter;
   limit?: number;
   offset?: number;
 }
@@ -60,6 +72,7 @@ export interface Metadata {
   sectors: string[];
   geographies: string[];
   buyer_types: BuyerType[];
+  data_sources: DataSource[];
 }
 
 export interface AnalyticsOverview {
@@ -158,4 +171,3 @@ export interface MarketCommentary {
   commentary: string[];
   watchpoints: string[];
 }
-

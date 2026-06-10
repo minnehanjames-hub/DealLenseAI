@@ -7,10 +7,14 @@ import { DealTable } from "@/components/DealTable";
 import { EmptyState } from "@/components/EmptyState";
 import { FilterBar } from "@/components/FilterBar";
 import { LoadingState } from "@/components/LoadingState";
-import { getAnalyticsOverview, getDeals, getMetadata } from "@/lib/api";
+import { defaultDataSource, getAnalyticsOverview, getDeals, getMetadata } from "@/lib/api";
 import type { AnalyticsOverview, DashboardFilters, Deal, Metadata } from "@/types";
 
-const defaultFilters: DashboardFilters = { limit: 180, multiple_availability: "all" };
+const defaultFilters: DashboardFilters = {
+  data_source: defaultDataSource as DashboardFilters["data_source"],
+  limit: 180,
+  multiple_availability: "all"
+};
 
 export default function DealsPage() {
   const [metadata, setMetadata] = useState<Metadata | null>(null);
@@ -41,7 +45,7 @@ export default function DealsPage() {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return deals;
     return deals.filter((deal) =>
-      [deal.target_company, deal.acquirer, deal.sector, deal.subsector, deal.rationale]
+      [deal.target_company, deal.acquirer, deal.sector, deal.subsector, deal.rationale, deal.source_name, deal.source_type]
         .join(" ")
         .toLowerCase()
         .includes(normalized)
@@ -52,10 +56,10 @@ export default function DealsPage() {
     <AppShell>
       <div className="mb-6">
         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-mint">Deal Database</p>
-        <h1 className="mt-2 text-3xl font-semibold text-white">Synthetic M&A Transaction Tape</h1>
+        <h1 className="mt-2 text-3xl font-semibold text-white">M&A Transaction Tape</h1>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-          Review 180 fictional M&A transactions with disclosed value, revenue, EBITDA, valuation multiples, buyer type,
-          rationale, confidence, and deal attractiveness scores.
+          Review public-source and synthetic M&A records with disclosed value, valuation fields where available, buyer
+          type, rationale, source transparency, confidence, and deal attractiveness scores.
         </p>
       </div>
 
@@ -87,4 +91,3 @@ export default function DealsPage() {
     </AppShell>
   );
 }
-

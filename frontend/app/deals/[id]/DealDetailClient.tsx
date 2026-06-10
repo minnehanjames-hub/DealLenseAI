@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowLeft, AlertTriangle, Building2, Gauge, LineChart, Target, type LucideIcon } from "lucide-react";
+import { ArrowLeft, AlertTriangle, Building2, ExternalLink, Gauge, LineChart, ShieldCheck, Target, type LucideIcon } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { EmptyState } from "@/components/EmptyState";
 import { LoadingState } from "@/components/LoadingState";
@@ -43,6 +43,20 @@ export function DealDetailClient({ id }: { id: string }) {
                 <p className="text-sm font-semibold uppercase tracking-[0.18em] text-mint">{deal.sector} · {deal.subsector}</p>
                 <h1 className="mt-2 text-3xl font-semibold text-white">{deal.target_company}</h1>
                 <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-400">{deal.target_description}</p>
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <span className={`rounded-md border px-2.5 py-1 text-xs font-semibold ${
+                    deal.data_source === "public"
+                      ? "border-mint/30 bg-mint/10 text-mint"
+                      : "border-gold/30 bg-gold/10 text-gold"
+                  }`}>
+                    {deal.data_source === "public" ? "Public source" : "Synthetic demo"}
+                  </span>
+                  {deal.verification_status ? (
+                    <span className="rounded-md border border-line bg-ink px-2.5 py-1 text-xs text-slate-300">
+                      {deal.verification_status}
+                    </span>
+                  ) : null}
+                </div>
               </div>
               <ScoreBadge score={deal.attractiveness_score} label="Attractiveness" />
             </div>
@@ -67,7 +81,7 @@ export function DealDetailClient({ id }: { id: string }) {
                 <div className="rounded-md border border-line bg-ink/50 p-4">
                   <h3 className="text-sm font-semibold text-slate-100">Acquirer Overview</h3>
                   <p className="mt-2 text-sm leading-6 text-slate-400">
-                    {deal.acquirer} is categorized as a {deal.buyer_type.toLowerCase()} buyer in the synthetic dataset,
+                    {deal.acquirer} is categorized as a {deal.buyer_type.toLowerCase()} buyer in the {deal.data_source === "public" ? "public-source" : "synthetic"} dataset,
                     pursuing a {deal.deal_type.toLowerCase()} transaction in {deal.geography}.
                   </p>
                 </div>
@@ -76,6 +90,30 @@ export function DealDetailClient({ id }: { id: string }) {
                 <Peer label="Sector Deals" value={String(deal.peer_comparison.sector_deal_count)} />
                 <Peer label="Sector EV/Revenue" value={multiple(deal.peer_comparison.sector_median_ev_revenue)} />
                 <Peer label="Sector EV/EBITDA" value={multiple(deal.peer_comparison.sector_median_ev_ebitda)} />
+              </div>
+              <div className="mt-5 rounded-md border border-line bg-ink/50 p-4">
+                <div className="flex items-center gap-2 text-sm font-semibold text-slate-100">
+                  <ShieldCheck className="h-4 w-4 text-mint" />
+                  Source Trail
+                </div>
+                <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+                  <SourceField label="Source" value={deal.source_name ?? "N/A"} />
+                  <SourceField label="Source Type" value={deal.source_type ?? "N/A"} />
+                  <SourceField label="Source Date" value={deal.source_date ? shortDate(deal.source_date) : "N/A"} />
+                  <SourceField label="Verification" value={deal.verification_status ?? "N/A"} />
+                </div>
+                {deal.source_url ? (
+                  <a
+                    href={deal.source_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-4 inline-flex items-center gap-2 rounded-md border border-line px-3 py-2 text-sm font-semibold text-slate-200 hover:bg-white/5 hover:text-mint"
+                  >
+                    Open Source
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                ) : null}
+                {deal.source_notes ? <p className="mt-3 text-xs leading-5 text-slate-500">{deal.source_notes}</p> : null}
               </div>
               <div className="mt-5">
                 <h3 className="text-sm font-semibold text-slate-100">Transaction Rationale</h3>
@@ -166,6 +204,15 @@ function Peer({ label, value }: { label: string; value: string }) {
     <div className="rounded-md border border-line bg-ink/50 p-3">
       <p className="text-xs text-slate-500">{label}</p>
       <p className="mt-1 text-lg font-semibold text-white">{value}</p>
+    </div>
+  );
+}
+
+function SourceField({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs text-slate-500">{label}</p>
+      <p className="mt-1 break-words text-slate-300">{value}</p>
     </div>
   );
 }

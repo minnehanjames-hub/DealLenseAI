@@ -2,6 +2,7 @@ import type { AnalyticsOverview, DashboardFilters, Deal, DealDetail, MarketComme
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
+export const defaultDataSource = process.env.NEXT_PUBLIC_DEFAULT_DATA_SOURCE || "public";
 
 export const isStaticDemo = process.env.NEXT_PUBLIC_STATIC_DEMO === "1";
 
@@ -32,6 +33,7 @@ function withQuery(path: string, filters?: DashboardFilters): string {
   if (filters?.date_from) params.set("date_from", filters.date_from);
   if (filters?.date_to) params.set("date_to", filters.date_to);
   if (filters?.multiple_availability) params.set("multiple_availability", filters.multiple_availability);
+  if (filters?.data_source) params.set("data_source", filters.data_source);
   if (filters?.limit) params.set("limit", String(filters.limit));
   if (filters?.offset) params.set("offset", String(filters.offset));
   const query = params.toString();
@@ -89,6 +91,7 @@ function applyFilters(deals: Deal[], filters?: DashboardFilters, includePaginati
     if (filters?.max_deal_value !== undefined && numberValue(deal.deal_value_musd) > filters.max_deal_value) return false;
     if (filters?.date_from && deal.announcement_date < filters.date_from) return false;
     if (filters?.date_to && deal.announcement_date > filters.date_to) return false;
+    if (filters?.data_source && filters.data_source !== "all" && deal.data_source !== filters.data_source) return false;
     if (filters?.multiple_availability === "revenue" && deal.ev_revenue_multiple === null) return false;
     if (filters?.multiple_availability === "ebitda" && deal.ev_ebitda_multiple === null) return false;
     if (filters?.multiple_availability === "both" && (deal.ev_revenue_multiple === null || deal.ev_ebitda_multiple === null)) return false;
@@ -306,7 +309,7 @@ function buildStaticSectorPdf(sector: string, deals: Deal[], commentary: MarketC
     "Key risks / watchpoints:",
     ...commentary.watchpoints.slice(0, 3),
     "Why PE may care: fragmented targets, repeat acquirer patterns, and visible valuation benchmarks can support platform or add-on theses.",
-    "Note: public GitHub Pages demo uses synthetic data and deterministic mock insight generation."
+    "Note: GitHub Pages demo uses embedded public-source and synthetic datasets with deterministic mock insight generation."
   ];
 
   const textCommands = reportLines.slice(0, 34).flatMap((line, index) => {
@@ -388,17 +391,21 @@ export async function getMarketCommentary(analytics: AnalyticsOverview): Promise
     const hotSector = analytics.scores.sector_momentum[0]?.sector ?? analytics.kpis.most_active_sector;
     const buyerLeader = analytics.charts.buyer_type_distribution[0]?.buyer_type ?? "Strategic";
     const topAcquirer = analytics.scores.acquirer_aggressiveness[0]?.acquirer ?? "repeat acquirers";
+    const multipleComment =
+      analytics.kpis.median_ev_ebitda > 0
+        ? `Median EV/EBITDA across the selected market is ${analytics.kpis.median_ev_ebitda.toFixed(1)}x, giving analysts a benchmark for premium-paid and discount transactions.`
+        : "EV/EBITDA is not broadly disclosed across the selected public-source records, so valuation commentary should focus on announced consideration and source quality.";
     return {
       mode: "mock",
       summary: "Static GitHub Pages demo using deterministic commentary from structured analytics.",
       commentary: [
         `${hotSector} screens as the highest-momentum sector in the selected universe, supported by filtered transaction count and valuation benchmarks.`,
         `${buyerLeader} buyers represent the largest share of activity, which points to consolidation, platform expansion, or adjacency-driven acquisition behavior.`,
-        `Median EV/EBITDA across the selected market is ${analytics.kpis.median_ev_ebitda.toFixed(1)}x, giving analysts a benchmark for premium-paid and discount transactions.`,
+        multipleComment,
         `${topAcquirer} remains one of the more aggressive acquirer profiles based on deal frequency, deal value, and activity captured in the demo dataset.`
       ],
       watchpoints: [
-        "The public demo uses synthetic data, so conclusions should be treated as product examples rather than investment advice.",
+        "The public demo includes source-backed public records and synthetic demo records. Treat outputs as product examples rather than investment advice.",
         "Validate disclosed multiples and buyer categorization before using any similar workflow in a real diligence process.",
         "Separate sponsor platforms from add-on acquisitions when interpreting buyer intent."
       ]

@@ -26,15 +26,22 @@ def mock_market_commentary(analytics: dict[str, Any]) -> dict[str, Any]:
     buyer_type = buyer_leader.get("buyer_type", "Strategic")
     acquirer = top_acquirer.get("acquirer", "repeat acquirers")
 
+    multiple_comment = (
+        f"Median EV/EBITDA across the filtered universe is {market_multiple}x, which gives analysts "
+        "a useful benchmark for spotting premium-paid and discount transactions."
+        if market_multiple
+        else (
+            "EV/EBITDA is not broadly disclosed across the filtered public-source universe, so valuation commentary "
+            "should focus on announced consideration, buyer intent, and source quality."
+        )
+    )
+
     commentary = [
         (
             f"{hot_sector} is showing the strongest sector momentum, with a score of "
             f"{top_sector.get('score', 'n/a')} and recent deal flow supporting a hot-sector ranking."
         ),
-        (
-            f"Median EV/EBITDA across the filtered universe is {market_multiple}x, which gives analysts "
-            "a useful benchmark for spotting premium-paid and discount transactions."
-        ),
+        multiple_comment,
         (
             f"{buyer_type} buyers represent the largest share of current activity, suggesting buyer behavior "
             "is being driven by platform expansion, adjacency moves, or consolidation themes."
@@ -107,4 +114,3 @@ async def generate_market_commentary(analytics: dict[str, Any]) -> dict[str, Any
         fallback = mock_market_commentary(analytics)
         fallback["summary"] = f"LLM request failed; using deterministic fallback. Reason: {exc}"
         return fallback
-

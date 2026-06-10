@@ -19,7 +19,7 @@ const features = [
   },
   {
     title: "Sector Snapshot Reports",
-    body: "Generate one-page PDF sector briefs with recent deals, top buyers, watchpoints, and PE interest notes.",
+    body: "Generate one-page sector briefs with source-backed deals, top buyers, watchpoints, and PE interest notes.",
     icon: FileText
   }
 ];
@@ -52,7 +52,7 @@ export default function LandingPage() {
           <div className="max-w-3xl">
             <p className="mb-5 inline-flex items-center gap-2 rounded-md border border-gold/20 bg-gold/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-gold">
               <ShieldCheck className="h-3.5 w-3.5" />
-              Synthetic demo market data
+              Public-source deal intelligence
             </p>
             <h1 className="text-5xl font-semibold tracking-normal text-white sm:text-7xl">DealLenseAI</h1>
             <p className="mt-5 max-w-2xl text-xl leading-8 text-slate-300">
@@ -60,7 +60,7 @@ export default function LandingPage() {
             </p>
             <p className="mt-5 max-w-2xl text-base leading-7 text-slate-400">
               Analyze M&A markets like an analyst with KPI dashboards, acquirer rankings, sector scoring, individual
-              deal pages, AI-generated market commentary, and PDF snapshot reports.
+              deal pages, source transparency, AI-generated market commentary, and PDF snapshot reports.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link

@@ -45,8 +45,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
         <div className="absolute bottom-6 left-5 right-5 rounded-md border border-gold/20 bg-gold/10 p-4">
-          <p className="text-xs font-medium text-gold">Synthetic demo data</p>
-          <p className="mt-1 text-xs leading-5 text-slate-400">Built for portfolio review, not investment advice.</p>
+          <p className="text-xs font-medium text-gold">Public-source mode</p>
+          <p className="mt-1 text-xs leading-5 text-slate-400">Real public records plus clearly labeled demo data.</p>
         </div>
       </aside>
 

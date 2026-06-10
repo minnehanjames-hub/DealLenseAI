@@ -36,6 +36,13 @@ def safe_median(series: pd.Series, default: float = 0.0) -> float:
     return safe_float(clean.median(), default)
 
 
+def median_by_group(df: pd.DataFrame, group_column: str, value_column: str) -> dict[Any, float]:
+    medians: dict[Any, float] = {}
+    for key, group in df.groupby(group_column):
+        medians[key] = safe_median(group[value_column], 0)
+    return medians
+
+
 def sector_momentum_scores(df: pd.DataFrame) -> list[dict[str, Any]]:
     if df.empty:
         return []
@@ -99,9 +106,9 @@ def deal_attractiveness_scores(
         return {}
 
     sector_score_map = {item["sector"]: item["score"] for item in sector_scores or []}
-    sector_median_multiple = df.groupby("sector")["ev_ebitda_multiple"].median().to_dict()
+    sector_median_multiple = median_by_group(df, "sector", "ev_ebitda_multiple")
     value_to_revenue = df["deal_value_musd"] / df["revenue_musd"].replace(0, pd.NA)
-    growth_proxy = normalize_series(value_to_revenue.fillna(value_to_revenue.median()), neutral=55)
+    growth_proxy = normalize_series(value_to_revenue.fillna(safe_median(value_to_revenue, 0)), neutral=55)
 
     scores: dict[int, float] = {}
     for idx, row in df.iterrows():
@@ -140,7 +147,7 @@ def acquirer_aggressiveness_scores(df: pd.DataFrame) -> list[dict[str, Any]]:
 
     working = df.copy()
     working["announcement_date"] = pd.to_datetime(working["announcement_date"], errors="coerce")
-    sector_median = working.groupby("sector")["ev_ebitda_multiple"].median()
+    sector_median = median_by_group(working, "sector", "ev_ebitda_multiple")
     working["sector_median_ev_ebitda"] = working["sector"].map(sector_median)
     working["multiple_premium"] = (
         working["ev_ebitda_multiple"] / working["sector_median_ev_ebitda"].replace(0, pd.NA) - 1
@@ -152,15 +159,16 @@ def acquirer_aggressiveness_scores(df: pd.DataFrame) -> list[dict[str, Any]]:
     grouped = working.groupby("acquirer").agg(
         acquisitions=("id", "count"),
         average_deal_value_musd=("deal_value_musd", "mean"),
-        median_multiple_premium=("multiple_premium", "median"),
         recent_activity=("announcement_date", lambda dates: int((dates > recent_start).sum())),
         primary_buyer_type=("buyer_type", lambda values: values.mode().iloc[0] if not values.mode().empty else "Other"),
     )
+    premium_by_acquirer = median_by_group(working, "acquirer", "multiple_premium")
+    grouped["median_multiple_premium"] = grouped.index.map(lambda acquirer: premium_by_acquirer.get(acquirer, 0))
 
     grouped["score"] = (
         normalize_series(grouped["acquisitions"], neutral=55) * 0.36
         + normalize_series(grouped["average_deal_value_musd"].fillna(0), neutral=50) * 0.22
-        + normalize_series(grouped["median_multiple_premium"].fillna(0), neutral=50) * 0.22
+        + normalize_series(grouped["median_multiple_premium"].fillna(0).infer_objects(copy=False), neutral=50) * 0.22
         + normalize_series(grouped["recent_activity"], neutral=50) * 0.20
     )
 

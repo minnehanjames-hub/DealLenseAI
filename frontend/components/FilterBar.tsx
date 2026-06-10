@@ -1,7 +1,7 @@
 "use client";
 
 import { RotateCcw, SlidersHorizontal } from "lucide-react";
-import type { BuyerType, DashboardFilters, Metadata } from "@/types";
+import type { BuyerType, DashboardFilters, DataSourceFilter, Metadata } from "@/types";
 
 export function FilterBar({
   metadata,
@@ -33,7 +33,18 @@ export function FilterBar({
           Reset
         </button>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-8">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-9">
+        <Field label="Data">
+          <select
+            value={filters.data_source ?? "public"}
+            onChange={(event) => update({ data_source: event.target.value as DataSourceFilter })}
+            className="w-full rounded-md border border-line bg-ink px-3 py-2 text-sm text-slate-200"
+          >
+            <option value="public">Public</option>
+            <option value="synthetic">Synthetic</option>
+            <option value="all">All</option>
+          </select>
+        </Field>
         <Field label="Sector">
           <select
             value={filters.sectors?.[0] ?? ""}

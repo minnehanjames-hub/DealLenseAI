@@ -6,6 +6,8 @@ from pydantic import BaseModel, Field
 
 
 BuyerType = Literal["Strategic", "Sponsor", "Corporate", "Family Office", "Other"]
+DataSource = Literal["synthetic", "public"]
+DataSourceFilter = Literal["synthetic", "public", "all"]
 
 
 class Deal(BaseModel):
@@ -27,6 +29,15 @@ class Deal(BaseModel):
     rationale: str
     source_quality_score: float = Field(ge=0, le=1)
     confidence_score: float = Field(ge=0, le=1)
+    data_source: DataSource = "synthetic"
+    source_name: str | None = None
+    source_url: str | None = None
+    source_type: str | None = None
+    source_date: str | None = None
+    verification_status: str | None = None
+    extracted_at: str | None = None
+    filing_accession: str | None = None
+    source_notes: str | None = None
 
 
 class DealFilters(BaseModel):
@@ -38,6 +49,7 @@ class DealFilters(BaseModel):
     date_from: str | None = None
     date_to: str | None = None
     multiple_availability: Literal["all", "revenue", "ebitda", "both"] = "all"
+    data_source: DataSourceFilter = "synthetic"
     limit: int = Field(default=500, ge=1, le=1000)
     offset: int = Field(default=0, ge=0)
 
@@ -56,4 +68,5 @@ class HealthResponse(BaseModel):
     status: str
     database: str
     deals_loaded: int
-
+    synthetic_deals_loaded: int = 0
+    public_deals_loaded: int = 0

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, ExternalLink } from "lucide-react";
 import type { Deal } from "@/types";
 import { money, multiple, shortDate } from "@/lib/format";
 import { ScoreBadge } from "@/components/ScoreBadge";
@@ -30,6 +30,7 @@ export function DealTable({
               <th className="px-4 py-3">EV/Rev</th>
               <th className="px-4 py-3">EV/EBITDA</th>
               <th className="px-4 py-3">Buyer</th>
+              <th className="px-4 py-3">Source</th>
               {!compact ? <th className="px-4 py-3">Score</th> : null}
               <th className="px-4 py-3">Rationale</th>
               <th className="px-4 py-3" />
@@ -48,6 +49,28 @@ export function DealTable({
                 <td className="whitespace-nowrap px-4 py-3 text-slate-300">{multiple(deal.ev_ebitda_multiple)}</td>
                 <td className="whitespace-nowrap px-4 py-3">
                   <span className="rounded-md border border-line bg-ink px-2 py-1 text-xs text-slate-300">{deal.buyer_type}</span>
+                </td>
+                <td className="whitespace-nowrap px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <span className={`rounded-md border px-2 py-1 text-xs ${
+                      deal.data_source === "public"
+                        ? "border-mint/30 bg-mint/10 text-mint"
+                        : "border-gold/30 bg-gold/10 text-gold"
+                    }`}>
+                      {deal.data_source === "public" ? "Public" : "Synthetic"}
+                    </span>
+                    {deal.source_url ? (
+                      <a
+                        href={deal.source_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-line text-slate-300 hover:bg-white/5 hover:text-mint"
+                        title={deal.source_name ?? "Open source"}
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    ) : null}
+                  </div>
                 </td>
                 {!compact ? (
                   <td className="whitespace-nowrap px-4 py-3">
@@ -72,4 +95,3 @@ export function DealTable({
     </div>
   );
 }
-

@@ -51,6 +51,7 @@ jobs:
         env:
           NEXT_PUBLIC_STATIC_DEMO: "1"
           NEXT_PUBLIC_BASE_PATH: "/DealLenseAI"
+          NEXT_PUBLIC_DEFAULT_DATA_SOURCE: "public"
         run: npm run build
 
       - name: Upload Pages artifact

@@ -33,44 +33,51 @@ def to_frame(deals: list[dict[str, Any]]) -> pd.DataFrame:
     return df
 
 
+def safe_series_median(series: pd.Series, default: float = 0.0) -> float:
+    clean = series.dropna()
+    if clean.empty:
+        return default
+    return safe_float(clean.median(), default)
+
+
+def safe_series_mean(series: pd.Series, default: float = 0.0) -> float:
+    clean = series.dropna()
+    if clean.empty:
+        return default
+    return safe_float(clean.mean(), default)
+
+
 def median_multiples_by_sector(df: pd.DataFrame) -> list[dict[str, Any]]:
     if df.empty:
         return []
-    grouped = df.groupby("sector").agg(
-        deal_count=("id", "count"),
-        median_ev_revenue=("ev_revenue_multiple", "median"),
-        median_ev_ebitda=("ev_ebitda_multiple", "median"),
-        total_value_musd=("deal_value_musd", "sum"),
-    )
-    return [
-        {
-            "sector": sector,
-            "deal_count": int(row["deal_count"]),
-            "median_ev_revenue": round(safe_float(row["median_ev_revenue"]), 2),
-            "median_ev_ebitda": round(safe_float(row["median_ev_ebitda"]), 2),
-            "total_value_musd": round(safe_float(row["total_value_musd"]), 1),
-        }
-        for sector, row in grouped.sort_values("deal_count", ascending=False).iterrows()
-    ]
+    rows: list[dict[str, Any]] = []
+    for sector, sector_df in df.groupby("sector"):
+        rows.append(
+            {
+                "sector": sector,
+                "deal_count": int(len(sector_df)),
+                "median_ev_revenue": round(safe_series_median(sector_df["ev_revenue_multiple"]), 2),
+                "median_ev_ebitda": round(safe_series_median(sector_df["ev_ebitda_multiple"]), 2),
+                "total_value_musd": round(safe_float(sector_df["deal_value_musd"].sum()), 1),
+            }
+        )
+    return sorted(rows, key=lambda item: item["deal_count"], reverse=True)
 
 
 def mean_multiples_by_sector(df: pd.DataFrame) -> list[dict[str, Any]]:
     if df.empty:
         return []
-    grouped = df.groupby("sector").agg(
-        mean_ev_revenue=("ev_revenue_multiple", "mean"),
-        mean_ev_ebitda=("ev_ebitda_multiple", "mean"),
-        average_deal_value_musd=("deal_value_musd", "mean"),
-    )
-    return [
-        {
-            "sector": sector,
-            "mean_ev_revenue": round(safe_float(row["mean_ev_revenue"]), 2),
-            "mean_ev_ebitda": round(safe_float(row["mean_ev_ebitda"]), 2),
-            "average_deal_value_musd": round(safe_float(row["average_deal_value_musd"]), 1),
-        }
-        for sector, row in grouped.sort_values("mean_ev_ebitda", ascending=False).iterrows()
-    ]
+    rows: list[dict[str, Any]] = []
+    for sector, sector_df in df.groupby("sector"):
+        rows.append(
+            {
+                "sector": sector,
+                "mean_ev_revenue": round(safe_series_mean(sector_df["ev_revenue_multiple"]), 2),
+                "mean_ev_ebitda": round(safe_series_mean(sector_df["ev_ebitda_multiple"]), 2),
+                "average_deal_value_musd": round(safe_series_mean(sector_df["deal_value_musd"]), 1),
+            }
+        )
+    return sorted(rows, key=lambda item: item["mean_ev_ebitda"], reverse=True)
 
 
 def deal_count_by_period(df: pd.DataFrame, period: str = "month") -> list[dict[str, Any]]:
@@ -95,7 +102,6 @@ def buyer_type_distribution(df: pd.DataFrame) -> list[dict[str, Any]]:
         return []
     grouped = df.groupby("buyer_type").agg(
         deals=("id", "count"),
-        median_ev_ebitda=("ev_ebitda_multiple", "median"),
         total_value_musd=("deal_value_musd", "sum"),
     )
     total = int(grouped["deals"].sum())
@@ -104,7 +110,7 @@ def buyer_type_distribution(df: pd.DataFrame) -> list[dict[str, Any]]:
             "buyer_type": buyer_type,
             "deals": int(row["deals"]),
             "share": round(int(row["deals"]) / max(total, 1), 3),
-            "median_ev_ebitda": round(safe_float(row["median_ev_ebitda"]), 2),
+            "median_ev_ebitda": round(safe_series_median(df[df["buyer_type"] == buyer_type]["ev_ebitda_multiple"]), 2),
             "total_value_musd": round(safe_float(row["total_value_musd"]), 1),
         }
         for buyer_type, row in grouped.sort_values("deals", ascending=False).iterrows()
@@ -117,7 +123,6 @@ def top_acquirers(df: pd.DataFrame, limit: int = 10) -> list[dict[str, Any]]:
     grouped = df.groupby("acquirer").agg(
         deals=("id", "count"),
         total_value_musd=("deal_value_musd", "sum"),
-        median_ev_ebitda=("ev_ebitda_multiple", "median"),
         buyer_type=("buyer_type", lambda values: values.mode().iloc[0] if not values.mode().empty else "Other"),
     )
     return [
@@ -125,7 +130,7 @@ def top_acquirers(df: pd.DataFrame, limit: int = 10) -> list[dict[str, Any]]:
             "acquirer": acquirer,
             "deals": int(row["deals"]),
             "total_value_musd": round(safe_float(row["total_value_musd"]), 1),
-            "median_ev_ebitda": round(safe_float(row["median_ev_ebitda"]), 2),
+            "median_ev_ebitda": round(safe_series_median(df[df["acquirer"] == acquirer]["ev_ebitda_multiple"]), 2),
             "buyer_type": row["buyer_type"],
         }
         for acquirer, row in grouped.sort_values("deals", ascending=False).head(limit).iterrows()
@@ -135,16 +140,18 @@ def top_acquirers(df: pd.DataFrame, limit: int = 10) -> list[dict[str, Any]]:
 def valuation_premium_by_buyer_type(df: pd.DataFrame) -> list[dict[str, Any]]:
     if df.empty:
         return []
-    market_median = safe_float(df["ev_ebitda_multiple"].median(), 0)
-    grouped = df.groupby("buyer_type")["ev_ebitda_multiple"].median().dropna()
-    return [
-        {
-            "buyer_type": buyer_type,
-            "median_ev_ebitda": round(safe_float(multiple), 2),
-            "premium_to_market": round((safe_float(multiple) / market_median - 1), 3) if market_median else 0,
-        }
-        for buyer_type, multiple in grouped.sort_values(ascending=False).items()
-    ]
+    market_median = safe_series_median(df["ev_ebitda_multiple"], 0)
+    rows: list[dict[str, Any]] = []
+    for buyer_type, buyer_df in df.groupby("buyer_type"):
+        multiple = safe_series_median(buyer_df["ev_ebitda_multiple"], 0)
+        rows.append(
+            {
+                "buyer_type": buyer_type,
+                "median_ev_ebitda": round(multiple, 2),
+                "premium_to_market": round((multiple / market_median - 1), 3) if market_median and multiple else 0,
+            }
+        )
+    return sorted(rows, key=lambda item: item["median_ev_ebitda"], reverse=True)
 
 
 def detect_outliers(df: pd.DataFrame) -> list[dict[str, Any]]:
@@ -194,8 +201,8 @@ def sector_snapshot(df: pd.DataFrame, sector: str) -> dict[str, Any]:
     return {
         "sector": sector,
         "deal_count": int(len(sector_df)),
-        "median_ev_revenue": round(safe_float(sector_df["ev_revenue_multiple"].median()), 2),
-        "median_ev_ebitda": round(safe_float(sector_df["ev_ebitda_multiple"].median()), 2),
+        "median_ev_revenue": round(safe_series_median(sector_df["ev_revenue_multiple"]), 2),
+        "median_ev_ebitda": round(safe_series_median(sector_df["ev_ebitda_multiple"]), 2),
         "total_value_musd": round(safe_float(sector_df["deal_value_musd"].sum()), 1),
         "top_acquirers": top_acquirers(sector_df, limit=5),
         "buyer_distribution": buyer_type_distribution(sector_df),
@@ -237,8 +244,8 @@ def overview(deals: list[dict[str, Any]]) -> dict[str, Any]:
     kpis = {
         "total_deals": int(len(df)),
         "total_disclosed_value_musd": round(safe_float(df["deal_value_musd"].sum()), 1),
-        "median_ev_revenue": round(safe_float(df["ev_revenue_multiple"].median()), 2),
-        "median_ev_ebitda": round(safe_float(df["ev_ebitda_multiple"].median()), 2),
+        "median_ev_revenue": round(safe_series_median(df["ev_revenue_multiple"]), 2),
+        "median_ev_ebitda": round(safe_series_median(df["ev_ebitda_multiple"]), 2),
         "most_active_sector": sector_counts.index[0] if not sector_counts.empty else "N/A",
         "strategic_vs_sponsor_split": {
             "strategic_or_corporate": strategic_count,
@@ -291,7 +298,7 @@ def enrich_deal_detail(deal: dict[str, Any], all_deals: list[dict[str, Any]]) ->
     sector_df = df[df["sector"] == sector] if not df.empty else df
     sector_scores = sector_momentum_scores(df)
     deal_scores = deal_attractiveness_scores(df, sector_scores)
-    sector_median = safe_float(sector_df["ev_ebitda_multiple"].median(), 0) if not sector_df.empty else 0
+    sector_median = safe_series_median(sector_df["ev_ebitda_multiple"], 0) if not sector_df.empty else 0
     selected_value = safe_float(deal.get("deal_value_musd"), 0)
     selected_multiple = safe_float(deal.get("ev_ebitda_multiple"), sector_median)
 
@@ -304,8 +311,15 @@ def enrich_deal_detail(deal: dict[str, Any], all_deals: list[dict[str, Any]]) ->
 
     red_flags: list[str] = []
     confidence = safe_float(deal.get("confidence_score"), 0)
+    data_source = str(deal.get("data_source", "synthetic"))
     if confidence < 0.72:
         red_flags.append("Lower confidence score; diligence should confirm source quality and disclosed metrics.")
+    if data_source == "public" and not deal.get("source_url"):
+        red_flags.append("Public-source record is missing a source URL and should be manually verified.")
+    if data_source == "public" and not deal.get("deal_value_musd"):
+        red_flags.append("Deal value was not disclosed in the captured public-source record.")
+    if data_source == "public" and not deal.get("ev_ebitda_multiple"):
+        red_flags.append("EV/EBITDA multiple is not disclosed; avoid valuation conclusions without additional filings or data providers.")
     if sector_median and selected_multiple > sector_median * 1.35:
         red_flags.append("Purchase multiple screens above the sector median, increasing integration and growth execution risk.")
     if safe_float(deal.get("ebitda_musd"), 0) / max(safe_float(deal.get("revenue_musd"), 1), 1) < 0.12:
@@ -313,11 +327,19 @@ def enrich_deal_detail(deal: dict[str, Any], all_deals: list[dict[str, Any]]) ->
     if not red_flags:
         red_flags.append("No major quantitative red flags identified in the synthetic dataset.")
 
-    commentary = (
-        f"{deal['target_company']} screens as a {deal['sector']} transaction with an estimated "
-        f"{selected_multiple:.1f}x EV/EBITDA multiple versus a sector median of {sector_median:.1f}x. "
-        f"The stated rationale emphasizes {deal['rationale'].lower()}"
-    )
+    if data_source == "public":
+        commentary = (
+            f"{deal['target_company']} is a public-source {deal['sector']} transaction captured from "
+            f"{deal.get('source_name') or 'a public announcement'}. "
+            f"Disclosed valuation data is limited to fields explicitly present in the source record. "
+            f"The stated rationale emphasizes {deal['rationale'].lower()}"
+        )
+    else:
+        commentary = (
+            f"{deal['target_company']} screens as a {deal['sector']} transaction with an estimated "
+            f"{selected_multiple:.1f}x EV/EBITDA multiple versus a sector median of {sector_median:.1f}x. "
+            f"The stated rationale emphasizes {deal['rationale'].lower()}"
+        )
 
     enriched = dict(deal)
     enriched.update(
@@ -326,7 +348,7 @@ def enrich_deal_detail(deal: dict[str, Any], all_deals: list[dict[str, Any]]) ->
             "peer_comparison": {
                 "sector": sector,
                 "sector_deal_count": int(len(sector_df)),
-                "sector_median_ev_revenue": round(safe_float(sector_df["ev_revenue_multiple"].median()), 2)
+                "sector_median_ev_revenue": round(safe_series_median(sector_df["ev_revenue_multiple"]), 2)
                 if not sector_df.empty
                 else None,
                 "sector_median_ev_ebitda": round(sector_median, 2) if sector_median else None,
@@ -351,4 +373,3 @@ def enrich_deal_detail(deal: dict[str, Any], all_deals: list[dict[str, Any]]) ->
         }
     )
     return enriched
-

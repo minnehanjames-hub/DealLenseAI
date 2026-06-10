@@ -11,10 +11,14 @@ import { FilterBar } from "@/components/FilterBar";
 import { KpiCard } from "@/components/KpiCard";
 import { LoadingState } from "@/components/LoadingState";
 import { money, multiple } from "@/lib/format";
-import { getAnalyticsOverview, getDeals, getMarketCommentary, getMetadata } from "@/lib/api";
+import { defaultDataSource, getAnalyticsOverview, getDeals, getMarketCommentary, getMetadata } from "@/lib/api";
 import type { AnalyticsOverview, DashboardFilters, Deal, MarketCommentary, Metadata } from "@/types";
 
-const defaultFilters: DashboardFilters = { limit: 40, multiple_availability: "all" };
+const defaultFilters: DashboardFilters = {
+  data_source: defaultDataSource as DashboardFilters["data_source"],
+  limit: 40,
+  multiple_availability: "all"
+};
 
 export default function DashboardPage() {
   const [metadata, setMetadata] = useState<Metadata | null>(null);
@@ -55,8 +59,8 @@ export default function DashboardPage() {
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-mint">Market Command Center</p>
           <h1 className="mt-2 text-3xl font-semibold text-white">M&A Deal Intelligence Dashboard</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-            Synthetic transaction data for valuation trends, active acquirers, buyer behavior, sector momentum, and
-            AI-generated market commentary.
+            Public-source and synthetic transaction data for valuation trends, active acquirers, buyer behavior, sector
+            momentum, and AI-generated market commentary.
           </p>
         </div>
       </div>
@@ -125,4 +129,3 @@ export default function DashboardPage() {
     </AppShell>
   );
 }
-
