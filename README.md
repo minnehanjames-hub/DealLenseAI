@@ -6,6 +6,10 @@ DealLenseAI is a production-style M&A Deal Intelligence Platform built as a seri
 
 The product is designed to feel closer to PitchBook, CapIQ, or a modern internal investment banking analytics tool than a simple AI chat interface.
 
+## In plain terms
+
+DealLenseAI is an M&A deal-intelligence dashboard. It answers the questions deal professionals actually ask: **which sectors are heating up, who's paying premium prices, and which buyers are being most aggressive?** It pulls in deal records, scores them, charts the trends, and uses AI to explain in plain English what the numbers mean — a lightweight take on tools like PitchBook or CapIQ. There's a [live demo](https://minnehanjames-hub.github.io/DealLenseAI/) you can click through.
+
 ## Live Demo
 
 - **GitHub Pages demo:** https://minnehanjames-hub.github.io/DealLenseAI/
@@ -175,15 +179,23 @@ The seed file includes 180 synthetic deals across:
 - Education
 - Beauty & Wellness
 
-## Scoring Models
+## How the scores work
 
-**Sector Momentum Score** blends recent deal count growth, median multiple expansion, sponsor share, average confidence score, and disclosed deal value growth.
+All three are transparent, deterministic 0–100 scores computed in `backend/app/scoring.py` — no black box.
 
-**Deal Attractiveness Score** evaluates sector attractiveness, EBITDA margin, a growth proxy, buyer quality, valuation reasonableness versus sector median, and confidence score.
+### Sector Momentum (which industries are heating up)
 
-**Acquirer Aggressiveness Score** ranks buyers based on acquisition count, average deal value, multiple premium versus sector median, and recent activity.
+Compares the **last 6 months** to the **prior 6 months** and blends: deal-count growth, **multiple expansion** (the biggest driver), sponsor share, data confidence, and total deal-value growth. Starts neutral at 45 — a sector scoring 80+ is accelerating, one in the 30s is cooling.
 
-These scores are proprietary-style demo models. They are transparent, deterministic, and designed for portfolio storytelling rather than investment use.
+### Deal Attractiveness (is this individual deal a good one)
+
+A weighted blend (0–100): sector quality (24%), valuation reasonableness vs. the sector's typical multiple (18%), EBITDA margin (18%), a price-to-revenue growth proxy (14%), buyer quality — Sponsor › Strategic › Corporate › Family Office › Other (14%), and data confidence (12%).
+
+### Acquirer Aggressiveness (which buyers are pushing hardest)
+
+Ranks the top 20 buyers by: number of acquisitions (36%), average deal size (22%), **multiple premium** — how much over the sector median they habitually pay (22%), and recent activity in the last 9 months (20%).
+
+These scores are proprietary-style demo models — transparent and deterministic by design, built for portfolio storytelling rather than investment use.
 
 ## AI Insight Layer
 
@@ -199,6 +211,14 @@ Add screenshots here after running the app:
 - Dashboard overview
 - Deal detail page
 - Sector report PDF
+
+## Limitations
+
+- The hosted GitHub Pages demo is a **fixed snapshot** with deterministic *mock* AI commentary — it doesn't update live or run the backend.
+- The synthetic dataset is **fictional** and must not be used for real investment, valuation, or diligence decisions.
+- The scores are **illustrative "proprietary-style" demo models** — transparent and deterministic, but built for portfolio storytelling, not investment-grade use.
+- AI commentary *explains* the analytics; without an `OPENAI_API_KEY` it falls back to deterministic text.
+- **Not investment advice.**
 
 ## Future Improvements
 
